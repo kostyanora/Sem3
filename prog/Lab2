@@ -1,0 +1,339 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+class Time {
+public:
+    int hour, min, sec, msec;
+    Time(int h, int m, int s, int ms) {
+        msec = ms % 1000;
+        sec = (s + ms / 1000) % 60;
+        min = (m + (s + ms / 1000) / 60) % 60;
+        hour = (h + (m + (s + ms / 1000) / 60) / 60) % 24;
+    }
+    void AddHour(int h) {
+        hour = (hour + h) % 24;
+        while (hour < 0) {
+            hour += 24;
+        }
+    }
+    void AddMin(int m) {
+        min += m;
+        while (min < 0) {
+            min += 60;
+            AddHour(-1);
+        }
+        AddHour(min / 60);
+        min %= 60;
+    }
+    void AddSec(int s) {
+        sec += s;
+        while (sec < 0) {
+            sec += 60;
+            AddMin(-1);
+        }
+        AddMin(sec / 60);
+        sec %= 60;
+    }
+    void AddMsec(int ms) {
+        msec += ms;
+        while (msec < 0){
+            msec += 1000;
+            AddSec(-1);
+        }
+        AddMin(msec / 1000);
+        msec %= 1000;
+    }
+    Time() {
+    }
+};
+
+Time operator+(const Time& t1, const Time& t2) { // перегрузка оператора для корректного выполнения действия над каждым объектом класса
+    Time t3{ t1.hour + t2.hour, t1.min + t2.min, t1.sec + t2.sec, t1.msec + t2.msec };
+    return t3;
+}
+
+Time operator-(Time& t1, Time& t2) {
+    Time t3;
+    if (t1.msec - t2.msec >= 0) {
+        t3.msec = t1.msec - t2.msec;
+    }
+    else {
+        t3.msec = t1.msec - t2.msec + 1000;
+        t1.sec -= 1;
+    };
+    if (t1.sec - t2.sec >= 0) {
+        t3.sec = t1.sec - t2.sec;
+    }
+    else {
+        t3.sec = t1.sec - t2.sec + 60;
+        t1.min -= 1;
+    };
+    if (t1.min - t2.min >= 0) {
+        t3.min = t1.min - t2.min;
+    }
+    else {
+        t3.min = t1.min - t2.min + 60;
+        t1.hour -= 1;
+    };
+    if (t1.hour - t2.hour >= 0) {
+        t3.hour = t1.hour - t2.hour;
+    }
+    else {
+        t3.hour = t1.hour - t2.hour + 24;
+    };
+    return t3;
+}
+
+ostream& operator<<(ostream& os, const Time& t) {
+    os << t.hour << " " << t.min << " " << t.sec << " " << t.msec;
+    return os;
+}
+
+istream& operator>>(istream& is, Time& t) {
+    is >> t.hour;
+    is >> t.min;
+    is >> t.sec;
+    is >> t.msec;
+    if ((t.hour < 0) || (t.min < 0) || (t.sec < 0) || (t.msec < 0))
+    {
+        cout << "\nERROR!" << endl;
+        exit(0);
+    }
+    return is;
+}
+
+bool operator>(Time& t1, Time& t2) {
+    return (t1.hour > t2.hour);
+}
+
+char Choice() {
+    char command;
+    cout << "1) Сложить два времени" << endl << "2) Вычесть одно время из другого" << endl << "3)Прибавить к времени" << endl <<"4)Вычесть из времени" << endl <<"5)Выход" << endl;
+    cout << "Command: ";
+    cin >> command;
+    return command;
+}
+
+Time Choice2(char choice,Time& time1) {
+    int command, sign;
+    if (choice == '-'){
+        sign = -1;
+    }
+    else {
+        sign = 1;
+    }
+    cout << "1) Часы" << endl << "2)Минуты" << endl << "3)Секунды" << endl << "4)Миллисекунды" << endl;
+    cin >> command;
+    switch (command) {
+    case 1:
+        int h;
+        cin >> h;
+        time1.AddHour(sign*h);
+        break;
+    case 2:
+        int min;
+        cin >> min;
+        time1.AddMin(sign*min);
+        break;
+    case 3:
+        int sec;
+        cin >> sec;
+        time1.AddSec(sign*sec);
+        break;
+    case 4:
+        int msec;
+        cin >> msec;
+        time1.AddMsec(sign*msec);
+        break;
+    default:
+        cout << "Ошибка, введено неверное значение";
+    }
+    return time1;
+}
+
+void Conclussion(Time& time3) {
+    cout << "Time sum: " << time3 << endl; // стандартный поток
+    ofstream fout("C:\\Users\\kosty\\Desktop\\txt.txt");
+    fout << "Time sum: " << time3; // файловый поток
+    ostringstream oss; // строковый поток
+    oss << time3.hour << " " << time3.min << " " << time3.sec << " " << time3.msec;
+    cout << "\nResult: " << oss.str() << endl;
+    fout.close();
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    char command = 0;
+    Time time1;
+    Time time2;
+    Time time3;
+    cout << "Time: ";
+    cin >> time1;
+    while (command != '5') {
+        command = Choice();
+        switch (command) {
+        case '1':
+            cout << "Time 2: ";
+            cin >> time2;
+            time1 = time1 + time2;
+            Conclussion(time1);
+            break;
+        case '2':
+            cout << "Time 2: ";
+            cin >> time2;
+            time1 = time1 - time2;
+            Conclussion(time1);
+            break;        
+        case '3':
+            time3 = Choice2('+',time1);
+            Conclussion(time3);
+            break;
+        case '4':
+            time3 = Choice2('-',time1);
+            Conclussion(time3);
+            break;
+        case '5':
+            return 0;
+            break;
+        default:
+            cout << "ERROR!" << endl;
+            break;
+        }
+    }
+    return 0;
+}
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+//y = f(x,z,t)
+///y = x - (az  + b) + tc
+
+struct Axis {
+    double x;
+    double z;
+    double t;
+};
+struct Parametrs {
+    double a;
+    double b;
+    double c;
+
+};
+
+class Term {
+public:
+    Term(char o, double p) {
+        op = o; number = p;
+    }
+    double Done(double num) {
+        if (op == '+') {
+            num += number;
+        } if (op == '-') {
+            num -= number;
+        }
+        return num;
+    }
+private:
+    char op;
+    double number;
+};
+class NumberOfTerm {
+public:
+    void AddTerm(char op, double n) {
+        terms.push_back({ op,n });
+    }
+    double Execute(double num) {
+        for (Term term : terms) {
+            num = term.Done(num);
+        }
+        return num;
+    }
+
+private:
+    vector<Term> terms;
+
+};
+
+NumberOfTerm MakeY(Parametrs p, Axis ax) {
+    NumberOfTerm func;
+    func.AddTerm('-', ax.z * p.a + p.b);
+    func.AddTerm('+', ax.t * p.c);
+    return func;
+}
+NumberOfTerm MakeX(Parametrs p, Axis ax) {
+    NumberOfTerm func2;
+    func2.AddTerm('+', ax.z * p.a + p.b);
+    func2.AddTerm('-', ax.t * p.c);
+    return func2;
+}
+
+double EvaluateY(Parametrs p, Axis a) {
+    NumberOfTerm func = MakeY(p, a);
+    return func.Execute(a.x);
+}
+
+double EvaluateX(Parametrs p, Axis ax) {
+    NumberOfTerm func2 = MakeX(p,ax);
+    return func2.Execute(ax.x);
+}
+
+double EvaluateY(Axis ax, Parametrs p) {
+    double Y;
+    Y = ax.x;
+    Y -= ax.z * p.a + p.b;
+    Y += ax.t * p.c;
+    return Y;
+}
+
+double EvaluateX(Axis ax, Parametrs p, double Y) {
+    double X;
+    X = Y;
+    X += ax.z * p.a + p.b;
+    X -= ax.t * p.c;
+    return X;
+}
+int main()
+{
+    setlocale(LC_ALL, "Russian");
+    bool exit = 1;
+    while (exit) {
+        cout << "Функция имеет вид: y = x - (a*z  + b) + t*c" << endl << "Зададим ей значения" << endl;
+        cout << "x = ";
+        int x;
+        cin >> x;
+        cout << "a = ";
+        int a;
+        cin >> a;
+        cout << "z = ";
+        int z;
+        cin >> z;
+        cout << "b = ";
+        int b;
+        cin >> b;
+        cout << "t = ";
+        int t;
+        cin >> t;
+        cout << "c = ";
+        int c;
+        cin >> c;
+        Axis A{ x,z,t };
+        Parametrs p{ a,b,c };
+        ///y = 1 - (11  + 2) + 13 = 1 - 3 + 3 = 1
+        cout << "Выберите способ (1/2)" << endl;
+        int choice;
+        cin >> choice;
+        if (choice == 1) {
+            cout << "Результат = " << EvaluateY(A, p) << "               " << EvaluateX(A,p, EvaluateY(A, p));
+        }
+        if (choice == 2) {
+            cout << "Результат = " << EvaluateY(p, A) << "               " << EvaluateX(p, A);
+        }
+        cout << endl << "Нажмите '0' чтобы выйти" << endl;
+        cin >> exit;
+    }
+}
